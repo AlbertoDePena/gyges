@@ -1,0 +1,6 @@
+.vscode/**/*
+
+#TypeScript transpiled files
+node_modules/**/*
+app/**/*.js
+main.js
