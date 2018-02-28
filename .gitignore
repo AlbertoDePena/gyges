@@ -1,6 +1,5 @@
-.vscode/**/*
-
-#TypeScript transpiled files
 node_modules/**/*
 app/**/*.js
+app/**/*.js.map
 main.js
+main.js.map
