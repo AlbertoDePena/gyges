@@ -1,5 +1,9 @@
 import { Board, Cell, Piece, Coordinate, Game, Player, Move } from './models';
 
+const SingleMovePattern = /^[abcdefg][123456]-[abcdefg][123456]$/g;
+
+const MultiMovePattern = /^[abcdefg][123456]-([abcdefg][123456]b-)*[abcdefg][123456]r-[abcdefg][123456]$/g;
+
 const Cells = [
   'a6', 'b6', 'c6', 'd6', 'e6', 'f6',
   'a5', 'b5', 'c5', 'd5', 'e5', 'f5',
@@ -8,6 +12,12 @@ const Cells = [
   'a2', 'b2', 'c2', 'd2', 'e2', 'f2',
   'a1', 'b1', 'c1', 'd1', 'e1', 'f1',
 ];
+
+const stringStartsWith =
+  (str: string, value: string) => value.length > 0 && str.substring(0, value.length) === value;
+
+const stringEndsWith =
+  (str: string, value: string) => value.length > 0 && str.substring(str.length - value.length, str.length) === value;
 
 const validatePlayerSetup = (setup: Piece[]): void => {
   if (setup.length !== 6) { throw 'There must be exactly 6 pieces'; }
@@ -52,55 +62,40 @@ const calculateY = (player: Player, coordinate: Coordinate, increment: number): 
   return player === Player.North ? coordinate.y - increment : coordinate.y + increment;
 };
 
-const validateMove1 = (from: Cell, to: Cell): boolean => {
+const validateMove = (from: Cell, to: Cell): boolean => {
+  if (!from || !to) { return false; }
   const x = Math.abs(to.coordinate.x - from.coordinate.x);
   const y = Math.abs(to.coordinate.y - from.coordinate.y);
   return (x + y) === from.value;
 };
 
-const validateMove = (player: Player, from: Cell, to: Cell, replace?: Cell): boolean => {
-  switch (from.piece) {
-    case Piece.Single: return true;
-    case Piece.Double: return true;
-    case Piece.Triple: return true;
-    default: return false;
-  }
-};
+const isValidPattern = (notation: string): boolean => {
+  const isSingle = (notation.match(SingleMovePattern) || []).length === 1;
+  const isMulti = (notation.match(MultiMovePattern) || []).length === 1;
 
-const validateMoveProperties = (move: Move): void => {
-  let found = Cells.filter(name => name === move.from).length > 0;
-  if (!found) { throw `Invalid move name ${move.from}`; }
-
-  found = Cells.filter(cell => cell === move.to).length > 0;
-  if (!found) { throw `Invalid move name ${move.to}`; }
-
-  if (move.replace) {
-    found = Cells.filter(cell => cell === move.replace).length > 0;
-    if (!found) { throw `Invalid move name ${move.replace}`; }
-  }
-};
-
-const parseCellNames = (notation: string): string[] => {
-  const cellNames = notation.split('-');
-  if (cellNames.length < 2 || cellNames.length > 3) { throw 'invalid move notation'; }
-  return cellNames;
+  return isSingle || isMulti;
 };
 
 const buildMove = (notation: string): Move => {
-  const cellNames = parseCellNames(notation);
+  if (!isValidPattern(notation)) { throw `illegal move notation (${notation})`; }
 
+  const cellNames = notation.toLowerCase().split('-');
   const from = cellNames[0];
-  const to = cellNames.length === 2 ? cellNames[1] : cellNames[2];
-  const replace = cellNames.length === 3 ? cellNames[1] : '';
+  const to = cellNames[cellNames.length - 1];
 
-  const move: Move = {
-    notation: notation.toLowerCase(),
-    from: from.toLowerCase(),
-    to: to.toLowerCase(),
-    replace: replace.toLowerCase()
+  const parse = (endsWith: string) => {
+    return (cellNames
+      .filter(name => stringEndsWith(name, endsWith))
+      .map(name => name.length > 2 ? name[0] + name[1] : name)) || [];
   };
 
-  validateMoveProperties(move);
+  const move: Move = {
+    notation: notation,
+    from: from,
+    to: to,
+    replace: parse('r')[0],
+    bounces: parse('b')
+  };
 
   return move;
 };
@@ -184,34 +179,28 @@ export function getSelectableCells(board: Board, player: Player): string[] {
 export function makeMove(game: Game, moveNotation: string): Game {
   const move = buildMove(moveNotation);
   const isSelectableCell = getSelectableCells(game.board, game.player).filter(name => name === move.from).length > 0;
-  if (!isSelectableCell) { throw `invalid move (${move.notation})`; }
+  if (!isSelectableCell) { throw `illegal move (${move.notation})`; }
 
-  const isReplace = move.replace ? true : false;
+  const shouldReplace = move.replace ? true : false;
   const from = game.board.cells.filter(x => x.name === move.from)[0];
-  const to = game.board.cells.filter(x => x.name === move.to)[0];
-
-  let replace: Cell;
-  if (isReplace) {
-    replace = game.board.cells.filter(x => x.name === move.replace)[0];
-  }
-
-  const invalid = !from || !to || (isReplace && !replace);
-  if (invalid) { throw `invalid move (${move.notation})`; }
-
-  if (!validateMove1(from, to)) { throw `invalid move (${move.notation})`; }
-
   const fromIndex = game.board.cells.indexOf(from);
+  const to = game.board.cells.filter(x => x.name === move.to)[0];
   const toIndex = game.board.cells.indexOf(to);
 
-  game.board.cells[fromIndex] = buildCell(from.coordinate.x, from.coordinate.y);
-  if (isReplace) {
+  if (shouldReplace) {
+    const replace = game.board.cells.filter(x => x.name === move.replace)[0];
     const replaceIndex = game.board.cells.indexOf(replace);
+
+    if (!validateMove(from, replace)) { throw `illegal move (${move.notation})`; }
 
     game.board.cells[replaceIndex] = buildCell(replace.coordinate.x, replace.coordinate.y, from.piece);
     game.board.cells[toIndex] = buildCell(to.coordinate.x, to.coordinate.y, replace.piece);
   } else {
+    if (!validateMove(from, to)) { throw `illegal move (${move.notation})`; }
+
     game.board.cells[toIndex] = buildCell(to.coordinate.x, to.coordinate.y, from.piece);
   }
+  game.board.cells[fromIndex] = buildCell(from.coordinate.x, from.coordinate.y);
 
   game.player = game.player === Player.South ? Player.North : Player.South;
 

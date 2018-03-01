@@ -37,6 +37,7 @@ export interface Move {
   from: string;
   to: string;
   replace?: string;
+  bounces: string[];
 }
 
 export interface Board {
