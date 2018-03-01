@@ -1,7 +1,7 @@
 Gyges (6x6) board (guyjes or juyges)
 
 
--Move Orthogonally (NORTH / SOUTH right angles)
+-Move Orthogonally (right angles)
 -To win, move a piece to your opponent's last row
 -No one owns pieces
 -You can only move a piece in the row nearest to you
@@ -16,3 +16,5 @@ Gyges (6x6) board (guyjes or juyges)
 -Tournament rules: you cannot win on opponent mistake
 -If none of the pieces can be moved (very rare) 
  then pieces in the next row can be moved
+ 
+ TODO: move code to engine.ts
