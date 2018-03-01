@@ -45,11 +45,17 @@ const isCellEmpty = (cells: Cell[], x: number, y: number): boolean => {
   if (y > 5 || y < 0) { return true; }
   const target = cells.filter(cell => cell.coordinate.x === x && cell.coordinate.y === y)[0];
   const isEmpty = (cell: Cell) => cell.value === 0;
-  return target ? isEmpty(target) : true;
+  return target ? isEmpty(target) : false;
 };
 
 const calculateY = (player: Player, coordinate: Coordinate, increment: number): number => {
   return player === Player.North ? coordinate.y - increment : coordinate.y + increment;
+};
+
+const validateMove1 = (from: Cell, to: Cell): boolean => {
+  const x = Math.abs(to.coordinate.x - from.coordinate.x);
+  const y = Math.abs(to.coordinate.y - from.coordinate.y);
+  return (x + y) === from.value;
 };
 
 const validateMove = (player: Player, from: Cell, to: Cell, replace?: Cell): boolean => {
@@ -152,13 +158,10 @@ export function getSelectableCells(board: Board, player: Player): string[] {
       case Piece.Single: return true;
       case Piece.Double:
         if (checkCoords(1, 0) || checkCoords(-1, 0)) { return true; }
-
         return checkCoords(0, 1);
       case Piece.Triple:
         if (checkCoords(1, 0) || checkCoords(2, 0) || checkCoords(-1, 0) || checkCoords(-2, 0)) { return true; }
-
         if (checkCoords(0, 1) || checkCoords(0, 2)) { return true; }
-
         return checkCoords(1, 1) || checkCoords(-1, 1);
       default: return false;
     }
@@ -195,7 +198,7 @@ export function makeMove(game: Game, moveNotation: string): Game {
   const invalid = !from || !to || (isReplace && !replace);
   if (invalid) { throw `invalid move (${move.notation})`; }
 
-  validateMove(game.player, from, to, replace);
+  if (!validateMove1(from, to)) { throw `invalid move (${move.notation})`; }
 
   const fromIndex = game.board.cells.indexOf(from);
   const toIndex = game.board.cells.indexOf(to);
