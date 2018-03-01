@@ -5,16 +5,13 @@ Gyges (6x6) board (guyjes or juyges)
 -To win, move a piece to your opponent's last row
 -No one owns pieces
 -You can only move a piece in the row nearest to you
--Pieces 1, 2 3, rings (number of move it can take)
+-If none of the pieces can be moved (very rare) 
+ then pieces in the next row can be moved
+-Pieces 1, 2, 3, rings (number of move it can take)
 -BOUNCE: when a piece lands on another, it can move 
  the number of moves of the piece landed on
 -REPLACE: place your piece in the target piece then 
  move the target piece anywhere except in goal or behind opponents active row
--You must not move through pieces: meaning triple 
- piece cant go over single nor double. It can land on it but not go over it..
+-You must not move through pieces, you can land on a piece but not go over it..
 -Cannot move through same space again in same turn
 -Tournament rules: you cannot win on opponent mistake
--If none of the pieces can be moved (very rare) 
- then pieces in the next row can be moved
- 
- TODO: move code to engine.ts

@@ -10,7 +10,6 @@ const Cells = [
 ];
 
 const validatePlayerSetup = (setup: Piece[]): void => {
-  if (!setup) { throw 'null arg (player setup)'; }
   if (setup.length !== 6) { throw 'There must be exactly 6 pieces'; }
 
   const validate = (piece: Piece) => {
@@ -20,16 +19,6 @@ const validatePlayerSetup = (setup: Piece[]): void => {
   validate(Piece.Single);
   validate(Piece.Double);
   validate(Piece.Triple);
-};
-
-const validateBoard = (board: Board): void => {
-  const validateCell = (cell: Cell) => {
-    const invalid = Cells.filter(name => name === cell.name).length > 1;
-
-    if (invalid) { throw 'invalid board cells'; }
-  };
-
-  board.cells.forEach(validateCell);
 };
 
 const getActiveCells = (player: Player, board: Board, increment: number): Cell[] => {
@@ -42,13 +31,13 @@ const getActiveCells = (player: Player, board: Board, increment: number): Cell[]
   return board.cells.filter(cell => hasValue(cell) && cell.coordinate.y === ycoord);
 };
 
-const buildCell = (x: number, y: number, piece?: Piece) => {
+const buildCell = (x: number, y: number, piece?: Piece): Cell => {
   return {
     name: buildCellName(x, y),
     piece: piece,
     value: piece || 0,
     coordinate: { x: x, y: y }
-  } as Cell;
+  };
 };
 
 const isCellEmpty = (cells: Cell[], x: number, y: number): boolean => {
@@ -59,8 +48,8 @@ const isCellEmpty = (cells: Cell[], x: number, y: number): boolean => {
   return target ? isEmpty(target) : true;
 };
 
-const calculateY = (player: Player, cell: Cell, increment: number): number => {
-  return player === Player.North ? cell.coordinate.y - increment : cell.coordinate.y + increment;
+const calculateY = (player: Player, coordinate: Coordinate, increment: number): number => {
+  return player === Player.North ? coordinate.y - increment : coordinate.y + increment;
 };
 
 const validateMove = (player: Player, from: Cell, to: Cell, replace?: Cell): boolean => {
@@ -72,7 +61,7 @@ const validateMove = (player: Player, from: Cell, to: Cell, replace?: Cell): boo
   }
 };
 
-const validateCellNames = (move: Move) => {
+const validateMoveProperties = (move: Move): void => {
   let found = Cells.filter(name => name === move.from).length > 0;
   if (!found) { throw `Invalid move name ${move.from}`; }
 
@@ -85,17 +74,14 @@ const validateCellNames = (move: Move) => {
   }
 };
 
-const validateMoveNotation = (moveNotation: string) => {
-  if (!moveNotation) { throw 'moveNotation is null or empty'; }
-
-  const cellNames = moveNotation.split('-');
-  if (cellNames.length < 2 || cellNames.length > 3) { throw 'move notation should be 2 cells for BOUNCE and 3 cells for REPLACE'; }
-
+const parseCellNames = (notation: string): string[] => {
+  const cellNames = notation.split('-');
+  if (cellNames.length < 2 || cellNames.length > 3) { throw 'invalid move notation'; }
   return cellNames;
 };
 
 const buildMove = (notation: string): Move => {
-  const cellNames = validateMoveNotation(notation);
+  const cellNames = parseCellNames(notation);
 
   const from = cellNames[0];
   const to = cellNames.length === 2 ? cellNames[1] : cellNames[2];
@@ -108,54 +94,31 @@ const buildMove = (notation: string): Move => {
     replace: replace.toLowerCase()
   };
 
-  validateCellNames(move);
+  validateMoveProperties(move);
 
   return move;
 };
 
-export function findCell(board: Board, x: number, y: number): Cell {
+const findCell = (board: Board, x: number, y: number): Cell => {
   const byCoordinates = (cell: Cell) => cell.coordinate.x === x && cell.coordinate.y === y;
   return board.cells.filter(byCoordinates)[0];
-}
+};
 
-export function printBoard(board: Board): void {
-  console.log('   NORTH');
-  console.log('     0');
-  let row = '';
-  for (let y = 5; y >= 0; y--) {
-    for (let x = 0; x < 6; x++) {
-      row += `${findCell(board, x, y).value} `;
-    }
-    console.log(row);
-    row = '';
-  }
-  console.log('     0');
-  console.log('   SOUTH');
-}
-
-export function buildCellName(x: number, y: number): string {
+const buildCellName = (x: number, y: number): string => {
   const col = String.fromCharCode('a'.charCodeAt(0) + x);
   const row = y + 1;
-
   return `${col}${row}`;
-}
+};
 
-export function initCells(): Cell[] {
+const initCells = (): Cell[] => {
   const cells = [];
-  let cell: Cell;
-  let coords: Coordinate;
   for (let y = 0; y < 6; y++) {
     for (let x = 0; x < 6; x++) {
-      cell = {
-        name: buildCellName(x, y),
-        value: 0,
-        coordinate: { x: x, y: y }
-      };
-      cells.push(cell);
+      cells.push({ name: buildCellName(x, y), value: 0, coordinate: { x: x, y: y } });
     }
   }
   return cells;
-}
+};
 
 export function newGame(northSetup: Piece[], southSetup: Piece[], player: Player): Game {
   validatePlayerSetup(northSetup);
@@ -174,45 +137,45 @@ export function newGame(northSetup: Piece[], southSetup: Piece[], player: Player
     game.board.cells[index] = buildCell(index, 0, piece);
   });
 
-  validateBoard(game.board);
-
   return game;
 }
 
 export function getSelectableCells(board: Board, player: Player): string[] {
-  const cells = board.cells;
-
-  // Piece cannot move through piece
   const canMove = (cell: Cell) => {
+
+    const checkCoords = (incrementX: number, incrementY: number) => {
+      const coords = cell.coordinate;
+      return isCellEmpty(board.cells, coords.x + incrementX, calculateY(player, coords, incrementY));
+    };
+
     switch (cell.piece) {
       case Piece.Single: return true;
       case Piece.Double:
-        return isCellEmpty(cells, cell.coordinate.x, calculateY(player, cell, 1));
+        if (checkCoords(1, 0) || checkCoords(-1, 0)) { return true; }
+
+        return checkCoords(0, 1);
       case Piece.Triple:
-        if (!isCellEmpty(cells, cell.coordinate.x, calculateY(player, cell, 1))) { return false; }
+        if (checkCoords(1, 0) || checkCoords(2, 0) || checkCoords(-1, 0) || checkCoords(-2, 0)) { return true; }
 
-        const checkRight = isCellEmpty(cells, cell.coordinate.x + 1, calculateY(player, cell, 1));
-        const checkLeft = isCellEmpty(cells, cell.coordinate.x - 1, calculateY(player, cell, 1));
-        if (checkRight || checkLeft) { return true; }
+        if (checkCoords(0, 1) || checkCoords(0, 2)) { return true; }
 
-        return isCellEmpty(cells, cell.coordinate.x, calculateY(player, cell, 2));
+        return checkCoords(1, 1) || checkCoords(-1, 1);
       default: return false;
     }
   };
 
-  // If none of the pieces can be moved (very rare) then use selectable pieces in the next row
   let increment = 0;
-  const selectableCells = () => {
-    const data =
+  const findCells = () => {
+    const cells =
       getActiveCells(player, board, increment)
         .filter(canMove)
         .map(cell => cell.name);
 
     increment++;
-    return data.length > 0 ? data : selectableCells();
+    return cells.length > 0 ? cells : findCells();
   };
 
-  return selectableCells();
+  return findCells();
 }
 
 export function makeMove(game: Game, moveNotation: string): Game {
@@ -250,4 +213,19 @@ export function makeMove(game: Game, moveNotation: string): Game {
   game.player = game.player === Player.South ? Player.North : Player.South;
 
   return game;
+}
+
+export function printBoard(board: Board): void {
+  console.log('   NORTH');
+  console.log('     0');
+  let row = '';
+  for (let y = 5; y >= 0; y--) {
+    for (let x = 0; x < 6; x++) {
+      row += `${findCell(board, x, y).value} `;
+    }
+    console.log(row);
+    row = '';
+  }
+  console.log('     0');
+  console.log('   SOUTH');
 }
