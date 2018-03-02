@@ -9,11 +9,6 @@ export enum Player {
   South = 'SOUTH'
 }
 
-export enum MoveType {
-  Bounce = 'BOUNCE',
-  Replace = 'REPLACE'
-}
-
 export enum GameStatus {
   InProgress = 0,
   NorthWon = 1,
@@ -25,26 +20,7 @@ export interface Coordinate {
   y: number;
 }
 
-export interface Cell {
-  name: string;
-  piece?: Piece;
-  value: number;
-  coordinate: Coordinate;
-}
-
-export interface Move {
-  notation: string;
-  from: string;
-  to: string;
-  replace?: string;
-  bounces: string[];
-}
-
-export interface Board {
-  cells: Cell[];
-}
-
 export interface Game {
   player: Player;
-  board: Board;
+  board: number[][];
 }

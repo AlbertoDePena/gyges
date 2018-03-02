@@ -15,3 +15,4 @@ Gyges (6x6) board (guyjes or juyges)
 -You must not move through pieces, you can land on a piece but not go over it..
 -Cannot move through same space again in same turn
 -Tournament rules: you cannot win on opponent mistake
+

@@ -1,15 +1,17 @@
+import { getShoreCells, printBoard, newGame } from './app/gyges/common';
 import { Game, Player, Piece } from './app/gyges/models';
-import { printBoard, makeMove, newGame, getSelectableCells } from './app/gyges/engine';
+import { makeMove } from './app/gyges/engine';
 
 const print = (game: Game): void => {
   printBoard(game.board);
   console.log('');
-  console.log(`${game.player}: ${getSelectableCells(game.board, game.player)}`);
+  const cells = getShoreCells(game.board, game.player);
+  console.log(`${game.player}: ${cells}`);
   console.log('');
 };
 
-const play = (game: Game, moveNotation: string): Game => {
-  makeMove(game, moveNotation);
+const play = (game: Game, move: string): Game => {
+  makeMove(game, move);
   print(game);
   return game;
 };
@@ -17,24 +19,16 @@ const play = (game: Game, moveNotation: string): Game => {
 class Program {
 
   public static main(): number {
-    const northSetup = [
-      Piece.Double, Piece.Single, Piece.Double,
-      Piece.Triple, Piece.Triple, Piece.Single
-    ];
-    const southSetup = [
-      Piece.Triple, Piece.Single, Piece.Triple,
-      Piece.Double, Piece.Single, Piece.Double
-    ];
-    let game = newGame(northSetup, southSetup, Player.South);
+    let game = newGame('212331', '313212', Player.South);
 
     print(game);
     game = play(game, 'd1-c2');
     game = play(game, 'd6-b5');
-    game = play(game, 'c1-e2');
-    game = play(game, 'a6-a4');
-    game = play(game, 'e1-e2r-f5');
-    game = play(game, 'f6-f5r-f2');
-    /*game = play(game, 'a1-b3');
+    /*game = play(game, 'b1-c1-c2-c4');
+    /*game = play(game, 'a6-b5-d6');
+    /*game = play(game, 'e1-e2-d5');
+    /*game = play(game, 'c6-c4');
+    /*game = play(game, 'b1-c1-f1');
     /*game = play(game, 'b6-b5');
     /*game = play(game, 'e1-e2');
     /*game = play(game, 'f6-f5');
