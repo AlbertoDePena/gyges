@@ -1,23 +1,9 @@
 import { Piece, Coordinate, Game, Player } from './models';
-import { isShoreCell, getCoordinates, getShoreCells, calculateY } from './common';
+import { isShoreCell, getCoordinate, getShoreCells, calculateY, isEmptyCell, getCellValueByName } from './common';
 
-const MOVE_NOTATION = /^([abcdefg][123456]-)+[abcdefg][123456]$/g;
-
-const CELLS = [
-  'a6', 'b6', 'c6', 'd6', 'e6', 'f6',
-  'a5', 'b5', 'c5', 'd5', 'e5', 'f5',
-  'a4', 'b4', 'c4', 'd4', 'e4', 'f4',
-  'a3', 'b3', 'c3', 'd3', 'e3', 'f3',
-  'a2', 'b2', 'c2', 'd2', 'e2', 'f2',
-  'a1', 'b1', 'c1', 'd1', 'e1', 'f1',
-];
-
-export const isValidMoveNotation = (notation: string): boolean => (notation.match(MOVE_NOTATION) || []).length === 1;
-
-export const isCellEmpty = (board: number[][], x: number, y: number): boolean => {
-  if (x > 5 || x < 0) { return false; }
-  if (y > 5 || y < 0) { return false; }
-  return board[x][y] === 0;
+export const isValidMoveNotation = (notation: string): boolean => {
+  const MOVE_NOTATION = /^([abcdefg][123456]-)+[abcdefg][123456]$/g;
+  return (notation.match(MOVE_NOTATION) || []).length === 1;
 };
 
 export const isValidBounce = (board: number[][], from: Coordinate, to: Coordinate): boolean => {
@@ -29,10 +15,10 @@ export const isValidBounce = (board: number[][], from: Coordinate, to: Coordinat
 };
 
 export const canBouncePiece = (player: Player, board: number[][], cell: string) => {
-  const coords = getCoordinates(board, cell);
+  const coords = getCoordinate(board, cell);
   const checkCoords =
     (incrementX: number, incrementY: number) =>
-      isCellEmpty(board, coords.x + incrementX, calculateY(player, coords, incrementY));
+      isEmptyCell(board, coords.x + incrementX, calculateY(player, coords, incrementY));
   const piece = board[coords.x][coords.y];
 
   switch (piece) {
@@ -47,33 +33,7 @@ export const canBouncePiece = (player: Player, board: number[][], cell: string) 
     default: return false;
   }
 };
-/*
-export const getAvailableCells = (board: Board, player: Player, cell: Cell): Cell[] => {
-  if (!cell.piece) { throw 'piece is null'; }
 
-  switch (cell.piece) {
-    case Piece.Single:
-      return [
-        findCellByCoords(board, cell.coordinate.x, calculateY(player, cell, 1))
-      ];
-    case Piece.Double:
-      return [
-        findCellByCoords(board, cell.coordinate.x, calculateY(player, cell, 2)),
-        findCellByCoords(board, cell.coordinate.x + 1, calculateY(player, cell, 1)),
-        findCellByCoords(board, cell.coordinate.x - 1, calculateY(player, cell, 1))
-      ];
-    case Piece.Triple:
-      return [
-        findCellByCoords(board, cell.coordinate.x, calculateY(player, cell, 3)),
-        findCellByCoords(board, cell.coordinate.x + 1, calculateY(player, cell, 2)),
-        findCellByCoords(board, cell.coordinate.x - 1, calculateY(player, cell, 2)),
-        findCellByCoords(board, cell.coordinate.x + 2, calculateY(player, cell, 1)),
-        findCellByCoords(board, cell.coordinate.x - 2, calculateY(player, cell, 1))
-      ];
-    default: return [];
-  }
-};
-*/
 export function makeMove(game: Game, moveNotation: string): Game {
   if (!isValidMoveNotation(moveNotation)) {
     throw `illegal move notation (${moveNotation})`;
@@ -94,9 +54,9 @@ export function makeMove(game: Game, moveNotation: string): Game {
   };
 
   const moveLength = moves.length;
-  const first = getCoordinates(game.board, moves[0]);
-  const last = getCoordinates(game.board, moves[moveLength - 1]);
-  const secondToLast = getCoordinates(game.board, moves[moveLength - 2]);
+  const first = getCoordinate(game.board, moves[0]);
+  const last = getCoordinate(game.board, moves[moveLength - 1]);
+  const secondToLast = getCoordinate(game.board, moves[moveLength - 2]);
 
   if (moveLength === 2) {
 
@@ -108,7 +68,7 @@ export function makeMove(game: Game, moveNotation: string): Game {
       throw `illegal move notation (${moveNotation})`;
     }
 
-    if (!isCellEmpty(game.board, last.x, last.y)) {
+    if (!isEmptyCell(game.board, last.x, last.y)) {
       throw `illegal move notation (${moveNotation})`;
     }
 
@@ -123,8 +83,8 @@ export function makeMove(game: Game, moveNotation: string): Game {
   let replace = false;
   const bounce = () => {
     if (moves.length >= count) {
-      const start = getCoordinates(game.board, moves[0]);
-      const end = getCoordinates(game.board, moves[1]);
+      const start = getCoordinate(game.board, moves[0]);
+      const end = getCoordinate(game.board, moves[1]);
 
       if (!canBouncePiece(game.player, game.board, moves[0])) {
         throw `illegal move notation (${moveNotation})`;
@@ -137,13 +97,13 @@ export function makeMove(game: Game, moveNotation: string): Game {
       }
 
       if (replace) {
-        if (!isCellEmpty(game.board, end.x, end.y)) {
+        if (!isEmptyCell(game.board, end.x, end.y)) {
           throw `illegal move notation (${moveNotation})`;
         }
 
         const opponent = game.player === Player.North ? Player.South : Player.North;
         const shoreCell = getShoreCells(game.board, opponent)[0];
-        const coords = getCoordinates(game.board, shoreCell);
+        const coords = getCoordinate(game.board, shoreCell);
         const invalidReplace = opponent === Player.North ? end.y > coords.y : end.y < coords.y;
 
         if (invalidReplace) {

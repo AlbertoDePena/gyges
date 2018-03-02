@@ -23,11 +23,26 @@ export const isShoreCell = (board: number[][], player: Player, cell: string): bo
   return getShoreCells(board, player).filter(x => x === cell).length > 0;
 };
 
-export const getCoordinates = (board: number[][], name: string): Coordinate => {
-  const data = name.toUpperCase().split('');
+export const isEmptyCell = (board: number[][], x: number, y: number): boolean => {
+  if (x > 5 || x < 0) { return false; }
+  if (y > 5 || y < 0) { return false; }
+  return board[x][y] === 0;
+};
+
+export const getCoordinate = (board: number[][], cell: string): Coordinate => {
+  const data = cell.toUpperCase().split('');
   const x = data[0].charCodeAt(0) - 65;
   const y = parseInt(data[1], null) - 1;
   return { x: x,  y: y };
+};
+
+export const getCellValueByName = (board: number[][], cell: string): number => {
+  const coordinate = getCoordinate(board, cell);
+  return board[coordinate.x][coordinate.y];
+};
+
+export const getCellValueByCoordinate = (board: number[][], x: number, y: number): number => {
+  return board[x][y];
 };
 
 export const calculateY = (player: Player, coordinate: Coordinate, increment: number): number => {
@@ -62,25 +77,24 @@ export const newGame = (north: string, south: string, player: Player): Game => {
   };
 
   const parseSetup = (setup: string): Piece[] => {
-    if (setup.length !== 6) { throw 'There must be exactly 6 pieces'; }
-    return setup.split('').map(x => parseInt(x, null));
-  };
+    if (setup.length !== 6) {
+      throw 'There must be exactly 6 pieces';
+    }
 
-  const validatePlayerSetup = (setup: Piece[]): void => {
+    const result = setup.split('').map(x => parseInt(x, null));
     const validate = (piece: Piece) => {
-      if (setup.filter(x => x === piece).length !== 2) { throw `Invalid # of ${piece} pieces`; }
+      if (result.filter(x => x === piece).length !== 2) { throw `Invalid # of ${piece} pieces`; }
     };
 
     validate(Piece.Single);
     validate(Piece.Double);
     validate(Piece.Triple);
+
+    return result;
   };
 
   const northSetup = parseSetup(north);
   const southSetup = parseSetup(south);
-
-  validatePlayerSetup(northSetup);
-  validatePlayerSetup(southSetup);
 
   const game: Game = {
     player: player,
@@ -93,4 +107,37 @@ export const newGame = (north: string, south: string, player: Player): Game => {
   }
 
   return game;
+};
+
+export const getPossibleMoves = (board: number[][], player: Player, cell: string): Coordinate[] => {
+  const coordinate = getCoordinate(board, cell);
+  const buildCoordinate = (x: number, y: number): Coordinate => {
+    return {x: x, y: y};
+  };
+  let result: Coordinate[] = [];
+  switch (getCellValueByName(board, cell)) {
+    case Piece.Single:
+      result = [
+        buildCoordinate(coordinate.x, calculateY(player, coordinate, 1))
+      ];
+      break;
+    case Piece.Double:
+      result = [
+        buildCoordinate(coordinate.x, calculateY(player, coordinate, 2)),
+        buildCoordinate(coordinate.x + 1, calculateY(player, coordinate, 1)),
+        buildCoordinate(coordinate.x - 1, calculateY(player, coordinate, 1))
+      ];
+      break;
+    case Piece.Triple:
+      result =  [
+        buildCoordinate(coordinate.x, calculateY(player, coordinate, 3)),
+        buildCoordinate(coordinate.x + 1, calculateY(player, coordinate, 2)),
+        buildCoordinate(coordinate.x - 1, calculateY(player, coordinate, 2)),
+        buildCoordinate(coordinate.x + 2, calculateY(player, coordinate, 1)),
+        buildCoordinate(coordinate.x - 2, calculateY(player, coordinate, 1))
+      ];
+      break;
+    default: break;
+  }
+  return result.filter(coord => isEmptyCell(board, coord.x, coord.y));
 };

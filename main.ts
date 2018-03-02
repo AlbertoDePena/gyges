@@ -1,4 +1,4 @@
-import { getShoreCells, printBoard, newGame } from './app/gyges/common';
+import { getShoreCells, printBoard, newGame, getPossibleMoves } from './app/gyges/common';
 import { Game, Player, Piece } from './app/gyges/models';
 import { makeMove } from './app/gyges/engine';
 
@@ -19,11 +19,14 @@ const play = (game: Game, move: string): Game => {
 class Program {
 
   public static main(): number {
-    let game = newGame('212331', '313212', Player.South);
+    let game = newGame('212331', '313212', Player.North);
 
     print(game);
-    game = play(game, 'd1-c2');
-    game = play(game, 'd6-b5');
+
+    const moves = getPossibleMoves(game.board, game.player, 'd6');
+    console.log(moves);
+    /*game = play(game, 'd1-c2');
+    /*game = play(game, 'd6-b5');
     /*game = play(game, 'b1-c1-c2-c4');
     /*game = play(game, 'a6-b5-d6');
     /*game = play(game, 'e1-e2-d5');
