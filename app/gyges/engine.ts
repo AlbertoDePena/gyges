@@ -27,10 +27,10 @@ export interface Game {
   winningPiece: number;
 }
 
-const MOVE_NOTATION = /^([abcdefg][123456]-)+[abcdefg][123456](-g){0,1}$/g;
+const MOVE_NOTATION = /^([A-F][1-6]-)+[A-F][1-6](-G){0,1}$/g;
 
 const isValidMoveNotation = (notation: string): boolean => {
-  return (notation.toLowerCase().match(MOVE_NOTATION) || []).length === 1;
+  return (notation.toUpperCase().match(MOVE_NOTATION) || []).length === 1;
 };
 
 const isMoveValidForSingle = (
@@ -262,7 +262,7 @@ const isEmptyCell = (board: number[][], x: number, y: number): boolean => {
 
 const getShoreCells = (player: Player, board: number[][]): string[] => {
   const buildCellName = (x: number, y: number) => {
-    const col = String.fromCharCode('a'.charCodeAt(0) + x);
+    const col = String.fromCharCode('A'.charCodeAt(0) + x);
     const row = y + 1;
     return `${col}${row}`;
   };
@@ -296,8 +296,8 @@ export function makeMove(game: Game, moveNotation: string): Game {
     throw `illegal move notation (${moveNotation})`;
   }
 
-  const moves = moveNotation.toLowerCase().split('-');
-  const isWinMove = moves.indexOf('g') !== -1;
+  const moves = moveNotation.toUpperCase().split('-');
+  const isWinMove = moves.indexOf('G') !== -1;
 
   if (isWinMove) {
     moves.pop();
