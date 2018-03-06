@@ -178,26 +178,22 @@ export const getPossibleMoves = (
   return result;
 };
 
-export const getPossMoves = (board: number[][], cell: string): Coordinate[] => {
-  return [];
-};
-
 export const isMoveValid = (
   board: number[][],
   from: string,
   to: string
 ): boolean => {
-  const fromCoord = getCoordinate(board, from);
-  const toCoord = getCoordinate(board, to);
-  const piece = board[fromCoord.x][fromCoord.y];
+  const start = getCoordinate(board, from);
+  const end = getCoordinate(board, to);
+  const piece = board[start.x][start.y];
 
   switch (piece) {
     case Piece.Single:
-      return isMoveValidForSingle(board, fromCoord, toCoord);
+      return isMoveValidForSingle(board, start, end);
     case Piece.Double:
-      return isMoveValidForDouble(board, fromCoord, toCoord);
+      return isMoveValidForDouble(board, start, end);
     case Piece.Triple:
-      return isMoveValidForTriple(board, fromCoord, toCoord);
+      return isMoveValidForTriple(board, start, end);
     default:
       return false;
   }
@@ -230,11 +226,11 @@ export const isMoveValidForDouble = (
     throw 'Invalid move';
   }
 
-  const canBounce = Math.abs(x) + Math.abs(y) === 2;
-  const north = isEmptyCell(board, from.x, from.y + 1) && canBounce;
-  const south = isEmptyCell(board, from.x, from.y - 1) && canBounce;
-  const east = isEmptyCell(board, from.x + 1, from.y) && canBounce;
-  const west = isEmptyCell(board, from.x - 1, from.y) && canBounce;
+  const isValidBounce = Math.abs(x) + Math.abs(y) === 2;
+  const north = isEmptyCell(board, from.x, from.y + 1) && isValidBounce;
+  const south = isEmptyCell(board, from.x, from.y - 1) && isValidBounce;
+  const east = isEmptyCell(board, from.x + 1, from.y) && isValidBounce;
+  const west = isEmptyCell(board, from.x - 1, from.y) && isValidBounce;
 
   if (x === 0) {
     return y > 0 ? north : south;
@@ -259,16 +255,24 @@ export const isMoveValidForTriple = (
 ) => {
   const x = to.x - from.x;
   const y = to.y - from.y;
+  const isEmpty = (incX: number, incY: number) => isEmptyCell(board, from.x + incX, from.y + incY);
 
   if (x === 0 && y === 0) {
     throw 'Invalid move';
   }
 
-  const check = (incX: number, incY: number) => isEmptyCell(board, from.x + incX, from.y + incY);
-  const north = check(0, 1) && check(0, 2);
-  const south = check(0, -1) && check(0, -2);
-  const east = check(1, 0) && check(2, 0);
-  const west = check(-1, 0) && check(-2, 0);
+  const north = isEmpty(0, 1) && isEmpty(0, 2);
+  const south = isEmpty(0, -1) && isEmpty(0, -2);
+  const east = isEmpty(1, 0) && isEmpty(2, 0);
+  const west = isEmpty(-1, 0) && isEmpty(-2, 0);
+  const northeast = isEmpty(0, 1) && isEmpty(1, 1);
+  const northwest = isEmpty(0, 1) && isEmpty(-1, 1);
+  const southeast = isEmpty(0, -1) && isEmpty(1, -1);
+  const southwest = isEmpty(0, -1) && isEmpty(-1, -1);
+  const eastnorth = isEmpty(1, 0) && isEmpty(1, 1);
+  const eastsouth = isEmpty(1, 0) && isEmpty(1, -1);
+  const westnorth = isEmpty(-1, 0) && isEmpty(-1, 1);
+  const westsouth = isEmpty(-1, 0) && isEmpty(-1, -1);
 
   if (x === 0) {
     if (y === 3) {
@@ -278,10 +282,10 @@ export const isMoveValidForTriple = (
       return south;
     }
     if (y === 1) {
-      return ((check(1, 0) && check(1, 1)) || (check(-1, 0) && check(-1, 1)));
+      return (eastnorth || westnorth);
     }
     if (y === -1) {
-      return ((check(1, 0) && check(1, -1)) || (check(-1, 0) && check(-1, -1)));
+      return (eastsouth || westsouth);
     }
   }
   if (y === 0) {
@@ -292,36 +296,36 @@ export const isMoveValidForTriple = (
       return west;
     }
     if (x === 1) {
-      return ((check(0, 1) && check(1, 1)) || (check(0, -1) && check(1, -1)));
+      return (northeast || southeast);
     }
     if (x === -1) {
-      return ((check(0, 1) && check(-1, 1)) || (check(0, -1) && check(-1, -1)));
+      return (northwest || southwest);
     }
   }
 
   if (x === 1 && y === 2) {
-    return (north || (check(0, 1) && check(1, 1)) || (check(1, 0) && check(1, 1)));
-  }
-  if (x === 2 && y === 1) {
-    return (check(0, 1) && check(1, 1)) || (check(1, 0) && check(1, 1) || east);
-  }
-  if (x === 2 && y === -1) {
-    return (east || (check(1, 0) && check(1, -1)) || (check(0, -1) && check(1, -1)));
-  }
-  if (x === 1 && y === -2) {
-    return (check(1, 0) && check(1, -1)) || (check(0, -1) && check(1, -1) || south);
-  }
-  if (x === -1 && y === -2) {
-    return (south || (check(0, -1) && check(-1, -1)) || (check(-1, 0) && check(-1, -1)));
-  }
-  if (x === -2 && y === -1) {
-    return (west || (check(0, -1) && check(-1, -1)) || (check(-1, 0) && check(-1, -1)));
-  }
-  if (x === -2 && y === 1) {
-    return (west || (check(-1, 0) && check(-1, 1)) || (check(0, 1) && check(-1, 1)));
+    return (north || northeast || eastnorth);
   }
   if (x === -1 && y === 2) {
-    return (north || (check(0, 1) && check(-1, 1)) || (check(-1, 0) && check(-1, 1)));
+    return (north || northwest || westnorth);
+  }
+  if (x === 2 && y === 1) {
+    return (east || eastnorth || northeast);
+  }
+  if (x === 2 && y === -1) {
+    return (east || eastsouth || southeast);
+  }
+  if (x === 1 && y === -2) {
+    return (south || southeast || eastsouth);
+  }
+  if (x === -1 && y === -2) {
+    return (south || southwest || westsouth);
+  }
+  if (x === -2 && y === -1) {
+    return (west || southwest || westsouth);
+  }
+  if (x === -2 && y === 1) {
+    return (west || westnorth || northwest);
   }
 
   return false;
