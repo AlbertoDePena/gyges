@@ -1,6 +1,10 @@
-import { printBoard, newGame, getGameStatus } from './app/gyges/common';
-import { Game } from './app/gyges/models';
-import { makeMove } from './app/gyges/engine';
+import {
+  Game,
+  makeMove,
+  printBoard,
+  newGame,
+  getGameStatus
+} from './app/gyges/engine';
 
 const print = (game: Game): void => {
   printBoard(game);
@@ -16,7 +20,6 @@ const play = (game: Game, move: string): Game => {
 };
 
 class Program {
-
   public static main(): number {
     let game = newGame('113223', '321213');
 
