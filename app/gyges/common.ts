@@ -9,7 +9,7 @@ const isMoveValidForSingle = (
   const y = to.y - from.y;
 
   if (x === 0 && y === 0) {
-    throw 'Invalid move';
+    return false;
   }
 
   return Math.abs(x) + Math.abs(y) === 1;
@@ -25,7 +25,7 @@ const isMoveValidForDouble = (
   const isValidBounce = Math.abs(x) + Math.abs(y) === 2;
 
   if (x === 0 && y === 0) {
-    throw 'Invalid move';
+    return false;
   }
 
   const north = isEmptyCell(board, from.x, from.y + 1) && isValidBounce;
@@ -60,7 +60,7 @@ const isMoveValidForTriple = (
     isEmptyCell(board, from.x + incX, from.y + incY);
 
   if (x === 0 && y === 0) {
-    throw 'Invalid move';
+    return false;
   }
 
   const north = isEmpty(0, 1) && isEmpty(0, 2);
@@ -287,7 +287,7 @@ export const printBoard = (game: Game): void => {
   console.log('   SOUTH');
 };
 
-export const newGame = (north: string, south: string, player: Player): Game => {
+export const newGame = (north: string, south: string): Game => {
   const initBoard = (): number[][] => {
     return [
       [0, 0, 0, 0, 0, 0],
@@ -322,7 +322,7 @@ export const newGame = (north: string, south: string, player: Player): Game => {
   const southSetup = parseSetup(south);
 
   const game: Game = {
-    player: player,
+    player: Player.South,
     board: initBoard(),
     status: GameStatus.InProgress,
     winningPiece: 0
@@ -338,5 +338,5 @@ export const newGame = (north: string, south: string, player: Player): Game => {
 
 export const getGameStatus = (game: Game) =>
   game.status !== GameStatus.InProgress
-    ? 'Game Over!'
+    ? `Game Over - ${game.player} won!`
     : `${game.player}'s turn`;

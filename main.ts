@@ -1,5 +1,5 @@
 import { printBoard, newGame, getGameStatus } from './app/gyges/common';
-import { Game, Player } from './app/gyges/models';
+import { Game } from './app/gyges/models';
 import { makeMove } from './app/gyges/engine';
 
 const print = (game: Game): void => {
@@ -18,16 +18,20 @@ const play = (game: Game, move: string): Game => {
 class Program {
 
   public static main(): number {
-    let game = newGame('212331', '313212', Player.South);
+    let game = newGame('113223', '321213');
 
     print(game);
 
-    game = play(game, 'a1-a4');
-    game = play(game, 'f6-f5');
-    game = play(game, 'b1-a1');
-    game = play(game, 'a6-a4-a1-g');
-    /*game = play(game, 'c1-d3');
-    /*game = play(game, 'd6-c4');*/
+    game = play(game, 'a1-b3');
+    game = play(game, 'b6-b5');
+    game = play(game, 'd1-e2');
+    game = play(game, 'c6-d4');
+    game = play(game, 'b1-c2');
+    game = play(game, 'f6-f3');
+    game = play(game, 'e1-e2-f3-f6');
+    // game = play(game, 'd6-d4-e2-f1-g');
+    // game = play(game, 'd6-d4-e2-g');
+    game = play(game, 'd6-d4-e2-f1-c1-g');
 
     return 0;
   }

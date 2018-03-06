@@ -39,10 +39,11 @@ export function makeMove(game: Game, moveNotation: string): Game {
   const togglePlayer = () =>
     (game.player = game.player === Player.South ? Player.North : Player.South);
 
-  const toggleState = (coordinate: Coordinate) => {
-    game.winningPiece = game.board[coordinate.x][coordinate.y];
+  const toggleState = (coordinate: Coordinate, piece: Piece) => {
+    game.winningPiece = piece;
     game.board[coordinate.x][coordinate.y] = 0;
-    game.status = game.player === Player.North ? GameStatus.NorthWon : GameStatus.SouthWon;
+    game.status =
+      game.player === Player.North ? GameStatus.NorthWon : GameStatus.SouthWon;
   };
 
   const updateCells = (from: string, to: string) => {
@@ -69,23 +70,20 @@ export function makeMove(game: Game, moveNotation: string): Game {
 
   validateBounce(0);
 
-  const coord = getCoordinate(game.board, moves[moveLength - 1]);
-
-  if (!isEmptyCell(game.board, coord.x, coord.y)) {
-    if (!isWinMove) {
-      throw `illegal move (${moveNotation})`;
-    }
-
-    if (!isWinMoveValid(game.player, game.board, coord)) {
-      throw `illegal move (${moveNotation})`;
-    }
-  }
+  const first = getCoordinate(game.board, moves[0]);
+  const last = getCoordinate(game.board, moves[moveLength - 1]);
 
   if (isWinMove) {
-    toggleState(coord);
-  } else {
+    if (!isWinMoveValid(game.player, game.board, last)) {
+      throw `illegal move (${moveNotation})`;
+    }
+
+    toggleState(first, game.board[first.x][first.y]);
+  } else if (isEmptyCell(game.board, last.x, last.y)) {
     updateCells(moves[0], moves[moveLength - 1]);
     togglePlayer();
+  } else {
+    throw `illegal move (${moveNotation})`;
   }
 
   return game;
