@@ -23,4 +23,6 @@ export interface Coordinate {
 export interface Game {
   player: Player;
   board: number[][];
+  status: GameStatus;
+  winningPiece: number;
 }

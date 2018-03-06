@@ -1,4 +1,166 @@
-import { Player, Coordinate, Piece, Game } from './models';
+import { Player, Coordinate, Piece, Game, GameStatus } from './models';
+
+const isMoveValidForSingle = (
+  board: number[][],
+  from: Coordinate,
+  to: Coordinate
+) => {
+  const x = to.x - from.x;
+  const y = to.y - from.y;
+
+  if (x === 0 && y === 0) {
+    throw 'Invalid move';
+  }
+
+  return Math.abs(x) + Math.abs(y) === 1;
+};
+
+const isMoveValidForDouble = (
+  board: number[][],
+  from: Coordinate,
+  to: Coordinate
+): boolean => {
+  const x = to.x - from.x;
+  const y = to.y - from.y;
+  const isValidBounce = Math.abs(x) + Math.abs(y) === 2;
+
+  if (x === 0 && y === 0) {
+    throw 'Invalid move';
+  }
+
+  const north = isEmptyCell(board, from.x, from.y + 1) && isValidBounce;
+  const south = isEmptyCell(board, from.x, from.y - 1) && isValidBounce;
+  const east = isEmptyCell(board, from.x + 1, from.y) && isValidBounce;
+  const west = isEmptyCell(board, from.x - 1, from.y) && isValidBounce;
+
+  if (x === 0) {
+    return y > 0 ? north : south;
+  }
+  if (y === 0) {
+    return x > 0 ? east : west;
+  }
+  if (y > 0) {
+    return x > 0 ? north || east : north || west;
+  }
+  if (y < 0) {
+    return x > 0 ? south || east : south || west;
+  }
+
+  return false;
+};
+
+const isMoveValidForTriple = (
+  board: number[][],
+  from: Coordinate,
+  to: Coordinate
+) => {
+  const x = to.x - from.x;
+  const y = to.y - from.y;
+  const isEmpty = (incX: number, incY: number) =>
+    isEmptyCell(board, from.x + incX, from.y + incY);
+
+  if (x === 0 && y === 0) {
+    throw 'Invalid move';
+  }
+
+  const north = isEmpty(0, 1) && isEmpty(0, 2);
+  const south = isEmpty(0, -1) && isEmpty(0, -2);
+  const east = isEmpty(1, 0) && isEmpty(2, 0);
+  const west = isEmpty(-1, 0) && isEmpty(-2, 0);
+  const northeast = isEmpty(0, 1) && isEmpty(1, 1);
+  const northwest = isEmpty(0, 1) && isEmpty(-1, 1);
+  const southeast = isEmpty(0, -1) && isEmpty(1, -1);
+  const southwest = isEmpty(0, -1) && isEmpty(-1, -1);
+  const eastnorth = isEmpty(1, 0) && isEmpty(1, 1);
+  const eastsouth = isEmpty(1, 0) && isEmpty(1, -1);
+  const westnorth = isEmpty(-1, 0) && isEmpty(-1, 1);
+  const westsouth = isEmpty(-1, 0) && isEmpty(-1, -1);
+
+  if (x === 0) {
+    if (y === 3) {
+      return north;
+    }
+    if (y === -3) {
+      return south;
+    }
+    if (y === 1) {
+      return eastnorth || westnorth;
+    }
+    if (y === -1) {
+      return eastsouth || westsouth;
+    }
+  }
+  if (y === 0) {
+    if (x === 3) {
+      return east;
+    }
+    if (x === -3) {
+      return west;
+    }
+    if (x === 1) {
+      return northeast || southeast;
+    }
+    if (x === -1) {
+      return northwest || southwest;
+    }
+  }
+
+  if (x === 1 && y === 2) {
+    return north || northeast || eastnorth;
+  }
+  if (x === -1 && y === 2) {
+    return north || northwest || westnorth;
+  }
+  if (x === 2 && y === 1) {
+    return east || eastnorth || northeast;
+  }
+  if (x === 2 && y === -1) {
+    return east || eastsouth || southeast;
+  }
+  if (x === 1 && y === -2) {
+    return south || southeast || eastsouth;
+  }
+  if (x === -1 && y === -2) {
+    return south || southwest || westsouth;
+  }
+  if (x === -2 && y === -1) {
+    return west || southwest || westsouth;
+  }
+  if (x === -2 && y === 1) {
+    return west || westnorth || northwest;
+  }
+
+  return false;
+};
+
+export const isMoveValid = (
+  board: number[][],
+  from: string,
+  to: string
+): boolean => {
+  const start = getCoordinate(board, from);
+  const end = getCoordinate(board, to);
+  const piece = board[start.x][start.y];
+
+  switch (piece) {
+    case Piece.Single:
+      return isMoveValidForSingle(board, start, end);
+    case Piece.Double:
+      return isMoveValidForDouble(board, start, end);
+    case Piece.Triple:
+      return isMoveValidForTriple(board, start, end);
+    default:
+      return false;
+  }
+};
+
+export const isWinMoveValid = (
+  player: Player,
+  board: number[][],
+  coordinate: Coordinate
+): boolean => {
+  return true;
+};
 
 export const getShoreCells = (player: Player, board: number[][]): string[] => {
   const buildCellName = (x: number, y: number) => {
@@ -48,33 +210,28 @@ export const getCoordinate = (board: number[][], cell: string): Coordinate => {
   return { x: x, y: y };
 };
 
-export const getCellValueByName = (board: number[][], cell: string): number => {
-  const coordinate = getCoordinate(board, cell);
-  return board[coordinate.x][coordinate.y];
-};
-
-export const calculateY = (
-  player: Player,
-  coordinate: Coordinate,
-  increment: number
-): number => {
-  return player === Player.North
-    ? coordinate.y - increment
-    : coordinate.y + increment;
-};
-
-export const printBoard = (board: number[][]): void => {
+export const printBoard = (game: Game): void => {
+  const getStatus = (player: Player) => {
+    switch (game.status) {
+      case GameStatus.NorthWon:
+        return player === Player.North ? game.winningPiece : '0';
+      case GameStatus.SouthWon:
+        return player === Player.South ? game.winningPiece : '0';
+      default:
+        return '0';
+    }
+  };
   console.log('   NORTH');
-  console.log('     0');
+  console.log(`     ${getStatus(Player.South)}`);
   let row = '';
   for (let y = 5; y >= 0; y--) {
     for (let x = 0; x < 6; x++) {
-      row += `${board[x][y]} `;
+      row += `${game.board[x][y]} `;
     }
     console.log(row);
     row = '';
   }
-  console.log('     0');
+  console.log(`     ${getStatus(Player.North)}`);
   console.log('   SOUTH');
 };
 
@@ -114,7 +271,9 @@ export const newGame = (north: string, south: string, player: Player): Game => {
 
   const game: Game = {
     player: player,
-    board: initBoard()
+    board: initBoard(),
+    status: GameStatus.InProgress,
+    winningPiece: 0
   };
 
   for (let x = 0; x < 6; x++) {
@@ -125,208 +284,7 @@ export const newGame = (north: string, south: string, player: Player): Game => {
   return game;
 };
 
-export const canMove = (
-  board: number[][],
-  player: Player,
-  from: string,
-  to: string
-): boolean => {
-  const coordinate = getCoordinate(board, to);
-  return (
-    getPossibleMoves(board, player, from).filter(
-      coord => coord.x === coordinate.x && coord.y === coordinate.y
-    ).length > 0
-  );
-};
-
-export const getPossibleMoves = (
-  board: number[][],
-  player: Player,
-  cell: string
-): Coordinate[] => {
-  const coordinate = getCoordinate(board, cell);
-  const buildCoordinate = (x: number, y: number): Coordinate => {
-    return { x: x, y: y };
-  };
-  let result: Coordinate[] = [];
-  switch (getCellValueByName(board, cell)) {
-    case Piece.Single:
-      result = [
-        buildCoordinate(coordinate.x, calculateY(player, coordinate, 1))
-      ];
-      break;
-    case Piece.Double:
-      result = [
-        buildCoordinate(coordinate.x, calculateY(player, coordinate, 2)),
-        buildCoordinate(coordinate.x + 1, calculateY(player, coordinate, 1)),
-        buildCoordinate(coordinate.x - 1, calculateY(player, coordinate, 1))
-      ];
-      break;
-    case Piece.Triple:
-      result = [
-        buildCoordinate(coordinate.x, calculateY(player, coordinate, 3)),
-        buildCoordinate(coordinate.x + 1, calculateY(player, coordinate, 2)),
-        buildCoordinate(coordinate.x - 1, calculateY(player, coordinate, 2)),
-        buildCoordinate(coordinate.x + 2, calculateY(player, coordinate, 1)),
-        buildCoordinate(coordinate.x - 2, calculateY(player, coordinate, 1))
-      ];
-      break;
-    default:
-      break;
-  }
-  // return result.filter(coord => isEmptyCell(board, coord.x, coord.y));
-  return result;
-};
-
-export const isMoveValid = (
-  board: number[][],
-  from: string,
-  to: string
-): boolean => {
-  const start = getCoordinate(board, from);
-  const end = getCoordinate(board, to);
-  const piece = board[start.x][start.y];
-
-  switch (piece) {
-    case Piece.Single:
-      return isMoveValidForSingle(board, start, end);
-    case Piece.Double:
-      return isMoveValidForDouble(board, start, end);
-    case Piece.Triple:
-      return isMoveValidForTriple(board, start, end);
-    default:
-      return false;
-  }
-};
-
-export const isMoveValidForSingle = (
-  board: number[][],
-  from: Coordinate,
-  to: Coordinate
-) => {
-  const x = to.x - from.x;
-  const y = to.y - from.y;
-
-  if (x === 0 && y === 0) {
-    throw 'Invalid move';
-  }
-
-  return Math.abs(x) + Math.abs(y) === 1;
-};
-
-export const isMoveValidForDouble = (
-  board: number[][],
-  from: Coordinate,
-  to: Coordinate
-): boolean => {
-  const x = to.x - from.x;
-  const y = to.y - from.y;
-
-  if (x === 0 && y === 0) {
-    throw 'Invalid move';
-  }
-
-  const isValidBounce = Math.abs(x) + Math.abs(y) === 2;
-  const north = isEmptyCell(board, from.x, from.y + 1) && isValidBounce;
-  const south = isEmptyCell(board, from.x, from.y - 1) && isValidBounce;
-  const east = isEmptyCell(board, from.x + 1, from.y) && isValidBounce;
-  const west = isEmptyCell(board, from.x - 1, from.y) && isValidBounce;
-
-  if (x === 0) {
-    return y > 0 ? north : south;
-  }
-  if (y === 0) {
-    return x > 0 ? east : west;
-  }
-  if (y > 0) {
-    return x > 0 ? north || east : north || west;
-  }
-  if (y < 0) {
-    return x > 0 ? south || east : south || west;
-  }
-
-  return false;
-};
-
-export const isMoveValidForTriple = (
-  board: number[][],
-  from: Coordinate,
-  to: Coordinate
-) => {
-  const x = to.x - from.x;
-  const y = to.y - from.y;
-  const isEmpty = (incX: number, incY: number) => isEmptyCell(board, from.x + incX, from.y + incY);
-
-  if (x === 0 && y === 0) {
-    throw 'Invalid move';
-  }
-
-  const north = isEmpty(0, 1) && isEmpty(0, 2);
-  const south = isEmpty(0, -1) && isEmpty(0, -2);
-  const east = isEmpty(1, 0) && isEmpty(2, 0);
-  const west = isEmpty(-1, 0) && isEmpty(-2, 0);
-  const northeast = isEmpty(0, 1) && isEmpty(1, 1);
-  const northwest = isEmpty(0, 1) && isEmpty(-1, 1);
-  const southeast = isEmpty(0, -1) && isEmpty(1, -1);
-  const southwest = isEmpty(0, -1) && isEmpty(-1, -1);
-  const eastnorth = isEmpty(1, 0) && isEmpty(1, 1);
-  const eastsouth = isEmpty(1, 0) && isEmpty(1, -1);
-  const westnorth = isEmpty(-1, 0) && isEmpty(-1, 1);
-  const westsouth = isEmpty(-1, 0) && isEmpty(-1, -1);
-
-  if (x === 0) {
-    if (y === 3) {
-      return north;
-    }
-    if (y === -3) {
-      return south;
-    }
-    if (y === 1) {
-      return (eastnorth || westnorth);
-    }
-    if (y === -1) {
-      return (eastsouth || westsouth);
-    }
-  }
-  if (y === 0) {
-    if (x === 3) {
-      return east;
-    }
-    if (x === -3) {
-      return west;
-    }
-    if (x === 1) {
-      return (northeast || southeast);
-    }
-    if (x === -1) {
-      return (northwest || southwest);
-    }
-  }
-
-  if (x === 1 && y === 2) {
-    return (north || northeast || eastnorth);
-  }
-  if (x === -1 && y === 2) {
-    return (north || northwest || westnorth);
-  }
-  if (x === 2 && y === 1) {
-    return (east || eastnorth || northeast);
-  }
-  if (x === 2 && y === -1) {
-    return (east || eastsouth || southeast);
-  }
-  if (x === 1 && y === -2) {
-    return (south || southeast || eastsouth);
-  }
-  if (x === -1 && y === -2) {
-    return (south || southwest || westsouth);
-  }
-  if (x === -2 && y === -1) {
-    return (west || southwest || westsouth);
-  }
-  if (x === -2 && y === 1) {
-    return (west || westnorth || northwest);
-  }
-
-  return false;
-};
+export const getGameStatus = (game: Game) =>
+  game.status !== GameStatus.InProgress
+    ? 'Game Over!'
+    : `${game.player}'s turn`;
