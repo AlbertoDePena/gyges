@@ -25,7 +25,7 @@ class Program {
     game = play(game, 'a1-a4');
     game = play(game, 'f6-f5');
     game = play(game, 'b1-a1');
-    game = play(game, 'b6-b5');
+    game = play(game, 'a6-a4-a1-g');
     /*game = play(game, 'c1-d3');
     /*game = play(game, 'd6-c4');*/
 

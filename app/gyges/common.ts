@@ -159,7 +159,59 @@ export const isWinMoveValid = (
   board: number[][],
   coordinate: Coordinate
 ): boolean => {
-  return true;
+  const x = coordinate.x;
+  const y = coordinate.y;
+  const piece = board[x][y];
+  const isEmpty = (xcoord: number, ycoord: number) =>
+    isEmptyCell(board, xcoord, ycoord);
+
+  switch (piece) {
+    case Piece.Single:
+      return true;
+    case Piece.Double:
+      if (y === 0 || y === 5) {
+        return isEmpty(x + 1, y) || isEmpty(x - 1, y);
+      }
+      if (y === 1) {
+        return isEmpty(x, y - 1);
+      }
+      if (y === 4) {
+        return isEmpty(x, y + 1);
+      }
+      return false;
+    case Piece.Triple:
+      if (y === 0 || y === 5) {
+        return (
+          (isEmpty(x + 1, y) && isEmpty(x + 2, y)) ||
+          (isEmpty(x - 1, y) && isEmpty(x - 2, y))
+        );
+      }
+      if (y === 1) {
+        return (
+          (isEmpty(x, y - 1) && isEmpty(x + 1, y - 1)) ||
+          (isEmpty(x, y - 1) && isEmpty(x - 1, y - 1)) ||
+          (isEmpty(x + 1, y) && isEmpty(x + 1, y - 1)) ||
+          (isEmpty(x - 1, y) && isEmpty(x - 1, y - 1))
+        );
+      }
+      if (y === 2) {
+        return isEmptyCell(board, x, y - 1) && isEmptyCell(board, x, y - 2);
+      }
+      if (y === 4) {
+        return (
+          (isEmpty(x, y + 1) && isEmpty(x + 1, y + 1)) ||
+          (isEmpty(x, y + 1) && isEmpty(x - 1, y + 1)) ||
+          (isEmpty(x + 1, y) && isEmpty(x + 1, y + 1)) ||
+          (isEmpty(x - 1, y) && isEmpty(x - 1, y + 1))
+        );
+      }
+      if (y === 3) {
+        return isEmpty(x, y + 1) && isEmpty(x, y + 2);
+      }
+      return false;
+    default:
+      return false;
+  }
 };
 
 export const getShoreCells = (player: Player, board: number[][]): string[] => {
