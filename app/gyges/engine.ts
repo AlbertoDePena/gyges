@@ -1,73 +1,12 @@
-import { Coordinate } from './engine';
-export enum Piece {
-  Single = 1,
-  Double = 2,
-  Triple = 3
-}
-
-export enum Player {
-  North = 'NORTH',
-  South = 'SOUTH'
-}
-
-export enum GameStatus {
-  InProgress = 0,
-  NorthWon = 1,
-  SouthWon = 2
-}
-
-export interface Coordinate {
-  x: number;
-  y: number;
-}
-
-export interface Game {
-  player: Player;
-  board: number[][];
-  status: GameStatus;
-  winningPiece: number;
-}
-
-export interface MoveNotation {
-  moves: string[];
-  isWinMove: boolean;
-  length: number;
-  first: string;
-  last: string;
-  replace: string;
-}
-
-const togglePlayer = (game: Game) =>
-  (game.player = game.player === Player.South ? Player.North : Player.South);
-
-const toggleState = (game: Game, coordinate: Coordinate) => {
-  game.winningPiece = game.board[coordinate.x][coordinate.y];
-  game.board[coordinate.x][coordinate.y] = 0;
-  game.status =
-    game.player === Player.North ? GameStatus.NorthWon : GameStatus.SouthWon;
-};
-
-const parseMoveNotation = (notation: string): MoveNotation => {
-  const data = notation.toUpperCase();
-  const match =
-    (data.match(/^([A-F][1-6]-)+[A-F][1-6](-G){0,1}$/g) || []).length === 1;
-  if (!match) {
-    throw `illegal move notation - ${notation}`;
-  }
-  const moves = data.split('-');
-  const isWinMove = moves.indexOf('G') !== -1;
-  if (isWinMove) {
-    moves.pop();
-  }
-  return {
-    moves: moves,
-    length: moves.length,
-    first: moves[0],
-    last: moves[moves.length - 1],
-    replace: moves[moves.length - 2],
-    isWinMove: isWinMove
-  };
-};
+import { Coordinate, Player, Piece, Game, GameStatus } from './models';
+import {
+  getCoordinate,
+  parseMoveNotation,
+  isShoreCell,
+  isEmptyCell,
+  toggleGameState,
+  togglePlayer
+} from './common';
 
 const isMoveValidForSingle = (
   board: number[][],
@@ -263,13 +202,6 @@ const isWinMoveValid = (
   }
 };
 
-const getCoordinate = (board: number[][], cell: string): Coordinate => {
-  const data = cell.toUpperCase().split('');
-  const x = data[0].charCodeAt(0) - 65;
-  const y = parseInt(data[1], null) - 1;
-  return { x: x, y: y };
-};
-
 const isMoveValid = (board: number[][], from: string, to: string): boolean => {
   const start = getCoordinate(board, from);
   const end = getCoordinate(board, to);
@@ -285,35 +217,6 @@ const isMoveValid = (board: number[][], from: string, to: string): boolean => {
     default:
       return false;
   }
-};
-
-const isEmptyCell = (board: number[][], x: number, y: number): boolean => {
-  if (x > 5 || x < 0) {
-    return false;
-  }
-  if (y > 5 || y < 0) {
-    return false;
-  }
-  return board[x][y] === 0;
-};
-
-const getShoreCells = (player: Player, board: number[][]): string[] => {
-  const buildCellName = (x: number, y: number) => {
-    const col = String.fromCharCode('A'.charCodeAt(0) + x);
-    const row = y + 1;
-    return `${col}${row}`;
-  };
-  const find = (increment: number) => {
-    const cells = [];
-    const y = player === Player.North ? 5 - increment : 0 + increment;
-    for (let x = 0; x < 6; x++) {
-      if (board[x][y] !== 0) {
-        cells.push(buildCellName(x, y));
-      }
-    }
-    return cells.length > 0 ? cells : find(increment + 1);
-  };
-  return find(0);
 };
 
 const isReplaceMoveValid = (
@@ -342,12 +245,6 @@ const isReplaceMoveValid = (
   return isValid;
 };
 
-const isShoreCell = (
-  player: Player,
-  board: number[][],
-  cell: string
-): boolean => getShoreCells(player, board).filter(x => x === cell).length > 0;
-
 export const makeMove = (game: Game, notation: string): Game => {
   if (game.status !== GameStatus.InProgress) {
     return;
@@ -366,7 +263,7 @@ export const makeMove = (game: Game, notation: string): Game => {
       const to = moveNotation.moves[count + 1];
 
       if (!isMoveValid(game.board, from, to)) {
-        if (moveNotation.length > 2 && moveNotation.length - (count + 1) === 1) {
+        if (moveNotation.length > 2 && moveNotation.length - 1 - count === 1) {
           isReplaceMove = true;
         } else {
           throw `illegal move - ${notation}`;
@@ -387,7 +284,7 @@ export const makeMove = (game: Game, notation: string): Game => {
       throw `illegal move - ${notation}`;
     }
 
-    toggleState(game, first);
+    toggleGameState(game, first);
   } else if (isEmptyCell(game.board, last.x, last.y)) {
     const piece = game.board[first.x][first.y];
 
@@ -412,31 +309,6 @@ export const makeMove = (game: Game, notation: string): Game => {
   }
 
   return game;
-};
-
-export const printBoard = (game: Game): void => {
-  const getStatus = (player: Player) => {
-    switch (game.status) {
-      case GameStatus.NorthWon:
-        return player === Player.North ? game.winningPiece : '0';
-      case GameStatus.SouthWon:
-        return player === Player.South ? game.winningPiece : '0';
-      default:
-        return '0';
-    }
-  };
-  console.log('   NORTH');
-  console.log(`     ${getStatus(Player.South)}`);
-  let row = '';
-  for (let y = 5; y >= 0; y--) {
-    for (let x = 0; x < 6; x++) {
-      row += `${game.board[x][y]} `;
-    }
-    console.log(row);
-    row = '';
-  }
-  console.log(`     ${getStatus(Player.North)}`);
-  console.log('   SOUTH');
 };
 
 export const newGame = (north: string, south: string): Game => {
@@ -487,8 +359,3 @@ export const newGame = (north: string, south: string): Game => {
 
   return game;
 };
-
-export const getGameStatus = (game: Game) =>
-  game.status !== GameStatus.InProgress
-    ? `Game Over - ${game.player} won!`
-    : `${game.player}'s turn`;

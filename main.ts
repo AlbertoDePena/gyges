@@ -1,10 +1,6 @@
-import {
-  Game,
-  makeMove,
-  printBoard,
-  newGame,
-  getGameStatus
-} from './app/gyges/engine';
+import { makeMove, newGame } from './app/gyges/engine';
+import { printBoard, getGameStatus } from './app/gyges/common';
+import { Game } from './app/gyges/models';
 
 const print = (game: Game): void => {
   printBoard(game);
