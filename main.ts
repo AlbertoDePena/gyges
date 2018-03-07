@@ -27,14 +27,15 @@ class Program {
 
     game = play(game, 'a1-b3');
     game = play(game, 'b6-b5');
-    game = play(game, 'd1-e2');
-    game = play(game, 'c6-d4');
-    game = play(game, 'b1-c2');
-    game = play(game, 'f6-f3');
-    game = play(game, 'e1-e2-f3-f6');
-    // game = play(game, 'd6-d4-e2-f1-g');
-    // game = play(game, 'd6-d4-e2-g');
-    game = play(game, 'd6-d4-e2-f1-c1-g');
+    game = play(game, 'b1-b3-f5');
+    game = play(game, 'c6-d6-e4');
+    game = play(game, 'e1-f1-c6');
+    game = play(game, 'e6-f5-f2');
+    game = play(game, 'c1-d1-e5');
+    game = play(game, 'd6-e4-d2');
+    game = play(game, 'd1-d2-d4');
+    // game = play(game, 'c6-e5-d4-e4-d2-g');
+    game = play(game, 'c6-d4-e4-d2-g');
 
     return 0;
   }
